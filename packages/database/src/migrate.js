@@ -1,9 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import { getPool, closePool } from './index.js';
 
-const directory = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
+const packageDirectory = dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = resolve(packageDirectory, '../../..');
+dotenv.config({ path: join(workspaceRoot, '.env') });
+const directory = join(packageDirectory, '..', 'migrations');
 
 async function migrate() {
   const pool = getPool();

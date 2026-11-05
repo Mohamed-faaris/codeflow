@@ -1,7 +1,12 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { closePool } from '@codeflow/database';
 import { createApp } from './app.js';
+
+const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+dotenv.config({ path: path.join(workspaceRoot, '.env') });
 
 const hostname = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 4317);
