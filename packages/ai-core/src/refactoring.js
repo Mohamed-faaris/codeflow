@@ -3,6 +3,7 @@ import { createTwoFilesPatch } from 'diff';
 import { getPool } from '@codeflow/database';
 import { readRepositoryFile, resolveRepositoryRoot } from '@codeflow/repo-analysis';
 import { createProviderManager, parseJsonResponse } from './providers.js';
+import { retrieveContext } from './retrieval.js';
 
 export async function proposeRefactoring(options) {
   if (!options.instructions || String(options.instructions).trim().length < 8) {
@@ -12,6 +13,18 @@ export async function proposeRefactoring(options) {
   const file = await readRepositoryFile(root, options.filePath, { maxBytes: 128 * 1024 });
   const hash = createHash('sha256').update(file.content).digest('hex');
   const providerManager = options.providerManager || createProviderManager();
+  let relatedContext = [];
+  try {
+    const retrieved = await retrieveContext({
+      projectId: options.projectId,
+      query: options.filePath + ' ' + options.instructions,
+      limit: 6,
+      providerManager
+    });
+    relatedContext = retrieved.results.filter((item) => item.path !== options.filePath);
+  } catch {
+    // A project may not have an index yet; the selected file remains sufficient for a basic proposal.
+  }
   const response = await providerManager.generate({
     provider: options.provider,
     model: options.model,
@@ -25,7 +38,9 @@ export async function proposeRefactoring(options) {
       },
       {
         role: 'user',
-        content: 'File: ' + options.filePath + '\nInstruction: ' + options.instructions + '\nCurrent source:\n' + file.content
+        content: 'File: ' + options.filePath + '\nInstruction: ' + options.instructions + '\nCurrent source:\n' + file.content +
+          '\n\nRelated repository context (supporting evidence only):\n' +
+          relatedContext.map((item) => '[' + item.path + ':' + item.startLine + '-' + item.endLine + ']\n' + item.content).join('\n\n')
       }
     ]
   });

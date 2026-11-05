@@ -20,21 +20,23 @@ export async function runSecurityAudit(options) {
   const reviewed = [];
   for (let offset = 0; offset < staticFindings.length; offset += 8) {
     const batch = staticFindings.slice(offset, offset + 8);
-    const contexts = await Promise.all(batch.map(async (finding) => {
-      const path = finding.path || finding.file;
-      if (!path) return { finding, context: '' };
-      try {
-        const context = await retrieveContext({
-          projectId: options.projectId,
-          query: (finding.title || '') + ' ' + (finding.description || '') + ' ' + path,
-          limit: 2,
-          providerManager
-        });
-        return { finding, context: context.results.map((item) => item.path + ':' + item.startLine + '\n' + item.content).join('\n\n') };
-      } catch {
-        return { finding, context: '' };
-      }
-    }));
+    const contexts = options.useAI
+      ? await Promise.all(batch.map(async (finding) => {
+          const path = finding.path || finding.file;
+          if (!path) return { finding, context: '' };
+          try {
+            const context = await retrieveContext({
+              projectId: options.projectId,
+              query: (finding.title || '') + ' ' + (finding.description || '') + ' ' + path,
+              limit: 2,
+              providerManager
+            });
+            return { finding, context: context.results.map((item) => item.path + ':' + item.startLine + '\n' + item.content).join('\n\n') };
+          } catch {
+            return { finding, context: '' };
+          }
+        }))
+      : batch.map((finding) => ({ finding, context: '' }));
     if (!options.useAI) {
       reviewed.push(...contexts.map(({ finding }) => ({ ...finding, aiReview: null })));
       continue;

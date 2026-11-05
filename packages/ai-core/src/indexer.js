@@ -53,17 +53,24 @@ export async function indexRepository(options) {
     );
     const revision = revisionResult.rows[0];
     await client.query('DELETE FROM dependency_edges WHERE revision_id = $1', [revision.id]);
-    await client.query('DELETE FROM symbols WHERE revision_id = $1', [revision.id]);
-    await client.query('DELETE FROM source_files WHERE revision_id = $1', [revision.id]);
+    const existingResult = await client.query(
+      'SELECT id, path, content_hash FROM source_files WHERE revision_id = $1',
+      [revision.id]
+    );
+    const existingFiles = new Map(existingResult.rows.map((row) => [row.path, row]));
 
     const fileIds = new Map();
+    const activePaths = [];
+    const reusedFilePaths = new Set();
     let indexedFiles = 0;
+    let reusedFiles = 0;
     let indexedChunks = 0;
     let indexedSymbols = 0;
     const chunkQueue = [];
 
     for (const entry of report.data.files) {
       if (!entry?.path || entry.analysisSkipped) continue;
+      activePaths.push(entry.path);
       const absolute = path.resolve(root, entry.path);
       if (!absolute.startsWith(root + path.sep) && absolute !== root) continue;
       let content;
@@ -76,6 +83,17 @@ export async function indexRepository(options) {
       } catch { continue; }
       if (content.includes('\u0000')) continue;
       const digest = hashContent(content);
+      const existing = existingFiles.get(entry.path);
+      if (existing && existing.content_hash === digest) {
+        fileIds.set(entry.path, existing.id);
+        reusedFilePaths.add(entry.path);
+        indexedFiles++;
+        reusedFiles++;
+        continue;
+      }
+      if (existing) {
+        await client.query('DELETE FROM source_files WHERE id = $1', [existing.id]);
+      }
       const fileResult = await client.query(
         `INSERT INTO source_files(project_id, revision_id, path, content_hash, language, size_bytes, metadata)
          VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
@@ -88,9 +106,15 @@ export async function indexRepository(options) {
       for (const chunk of chunks) chunkQueue.push({ ...chunk, fileId: fileResult.rows[0].id });
     }
 
+    await client.query(
+      'DELETE FROM source_files WHERE revision_id = $1 AND NOT (path = ANY($2::text[]))',
+      [revision.id, activePaths]
+    );
+
     const symbols = report.data.functions || [];
     for (const symbol of symbols) {
       const filePath = symbol.file || symbol.path;
+      if (reusedFilePaths.has(filePath)) continue;
       const fileId = fileIds.get(filePath);
       if (!fileId) continue;
       await client.query(
@@ -144,6 +168,7 @@ export async function indexRepository(options) {
       revisionId: revision.id,
       commitSha,
       indexedFiles,
+      reusedFiles,
       indexedChunks,
       indexedSymbols,
       dependencyEdges: (report.data.connections || []).length,
