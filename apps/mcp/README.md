@@ -34,6 +34,18 @@ CODEFLOW_ALLOWED_ROOTS="$HOME/Projects" pnpm mcp
 
 By default, only the current working directory is allowed. Set `CODEFLOW_ALLOWED_ROOTS` to a path-delimited list of directories containing repositories the agent may inspect. This is an explicit filesystem boundary.
 
+## In-app MCP interface
+
+The original CodeFlow `index.html` UI contains an **MCP** panel. It provides:
+
+- An inventory of the exact eight tools registered by this server.
+- An editable CodeFlow clone path, allowed repository roots, default repository and cache TTL.
+- A generated stdio `mcpServers` JSON configuration, ready to copy into an MCP client.
+- A copyable `pnpm mcp` launch command and security/transport notes.
+
+The UI does not claim to detect live MCP client connectivity. Since the server communicates over stdio, the MCP client launches and supervises the server process. Check the client host's own status/logs for connection state.
+
+
 ## Configure an MCP client
 
 Use the absolute path to your local CodeFlow clone. Example configuration:
