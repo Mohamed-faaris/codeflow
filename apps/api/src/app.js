@@ -48,7 +48,7 @@ async function projectById(projectId) {
 
 export function createApp() {
   const app = new Hono();
-  const allowedOrigins = (process.env.CODEFLOW_ALLOWED_ORIGINS || 'http://localhost:4173,http://127.0.0.1:4173,http://localhost:4174,http://127.0.0.1:4174')
+  const allowedOrigins = (process.env.CODEFLOW_ALLOWED_ORIGINS || 'http://localhost:4173,http://127.0.0.1:4173')
     .split(',').map((origin) => origin.trim()).filter(Boolean);
 
   app.use('/api/*', cors({
