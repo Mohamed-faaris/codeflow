@@ -17413,6 +17413,18 @@ function App(){
         }
         setAiBusy(true);setAiError('');setAiNotice('Checking AI API and registering repository...');
         try{
+            var apiReady=false,lastApiError=null;
+            for(var attempt=0;attempt<30;attempt++){
+                try{
+                    await aiApiRequest('/api/health');
+                    apiReady=true;
+                    break;
+                }catch(error){
+                    lastApiError=error;
+                    if(attempt<29)await new Promise(function(resolve){setTimeout(resolve,500);});
+                }
+            }
+            if(!apiReady)throw lastApiError||new Error('Local CodeFlow AI API did not become ready');
             await aiApiRequest('/api/providers');
             var registered=await aiApiRequest('/api/projects',{
                 method:'POST',

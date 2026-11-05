@@ -389,7 +389,6 @@ export function openBrowser(url, spawnFn) {
   }
 }
 
-
 async function proxyAiRequest(req, res, url, apiBase, apiToken) {
   try {
     const base = new URL(apiBase || 'http://localhost:4317');
