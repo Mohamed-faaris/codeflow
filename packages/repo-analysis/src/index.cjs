@@ -257,16 +257,14 @@ async function getSymbolContext(repositoryPath, symbolName) {
   };
 }
 
-module.exports = {
-  analyzeRepository,
-  getBlastRadius,
-  getDependencyGraph,
-  getFileContext,
-  getSecurityFindings,
-  getSymbolContext,
-  filterSensitiveAnalysis,
-  isSensitiveRepositoryPath,
-  readRepositoryFile,
-  resolveRepositoryRoot,
-  searchCode
-};
+exports.analyzeRepository = analyzeRepository;
+exports.getBlastRadius = getBlastRadius;
+exports.getDependencyGraph = getDependencyGraph;
+exports.getFileContext = getFileContext;
+exports.getSecurityFindings = getSecurityFindings;
+exports.getSymbolContext = getSymbolContext;
+exports.filterSensitiveAnalysis = filterSensitiveAnalysis;
+exports.isSensitiveRepositoryPath = isSensitiveRepositoryPath;
+exports.readRepositoryFile = readRepositoryFile;
+exports.resolveRepositoryRoot = resolveRepositoryRoot;
+exports.searchCode = searchCode;

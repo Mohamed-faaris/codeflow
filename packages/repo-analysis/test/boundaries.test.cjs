@@ -7,6 +7,26 @@ const os = require('node:os');
 const path = require('node:path');
 const { filterSensitiveAnalysis, isSensitiveRepositoryPath, resolveRepositoryRoot, readRepositoryFile } = require('../src/index.cjs');
 
+
+test('workspace ESM consumers can import named CommonJS exports', async () => {
+  const analysis = await import('../src/index.cjs');
+  for (const name of [
+    'analyzeRepository',
+    'getBlastRadius',
+    'getDependencyGraph',
+    'getFileContext',
+    'getSecurityFindings',
+    'getSymbolContext',
+    'filterSensitiveAnalysis',
+    'isSensitiveRepositoryPath',
+    'readRepositoryFile',
+    'resolveRepositoryRoot',
+    'searchCode'
+  ]) {
+    assert.equal(typeof analysis[name], 'function', name);
+  }
+});
+
 test('sensitive credential paths are recognized before AI indexing or context reads', () => {
   for (const filePath of [
     '.env',
