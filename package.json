@@ -1,21 +1,25 @@
 {
-  "name": "codeflow-workspace",
-  "version": "1.1.0",
-  "private": true,
-  "description": "CodeFlow — codebase intelligence with optional AI and MCP integrations",
-  "packageManager": "pnpm@10.20.0",
-  "engines": { "node": ">=20.19.0" },
-  "bin": { "codeflow": "./cli/codeflow.mjs" },
-  "scripts": {
-    "dev": "turbo dev --parallel",
-    "build": "turbo build",
-    "test": "turbo test",
-    "test:legacy": "node --test tests/*.test.mjs tests/*.smoke.js",
-    "start:api": "pnpm --filter @codeflow/api start",
-    "mcp": "pnpm --filter @codeflow/mcp start",
-    "db:migrate": "pnpm --filter @codeflow/database migrate",
-    "analyze": "node card/analyze.js --path .",
-    "codeflow:local": "node cli/codeflow.mjs ."
+  "name": "codeflow",
+  "version": "1.0.0",
+  "description": "Visualize codebase architecture in the browser. A thin CLI opens that same UI.",
+  "license": "MIT",
+  "bin": {
+    "codeflow": "./cli/codeflow.mjs"
   },
-  "devDependencies": { "turbo": "^2.6.0" }
+  "files": [
+    "index.html",
+    "vendor",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/codeflow.git"
+  },
+  "scripts": {
+    "start": "node cli/codeflow.mjs .",
+    "test": "node --test tests/*.test.mjs tests/*.smoke.js"
+  }
 }
