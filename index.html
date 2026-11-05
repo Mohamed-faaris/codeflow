@@ -799,6 +799,25 @@ body{height:100dvh;min-height:100dvh}
 .ai-muted{font-size:9px;color:var(--t3);line-height:1.5}
 @media(max-width:980px){.ai-chat-list{max-height:260px}}
 
+    
+.mcp-workspace{display:flex;flex-direction:column;gap:10px}
+.mcp-hero{padding:12px;background:var(--bg0);border:1px solid var(--border2);border-radius:8px}
+.mcp-hero-title{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--t1)}
+.mcp-transport{font-size:8px;font-weight:700;letter-spacing:.5px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;color:var(--acc)}
+.mcp-section-title{font-size:10px;font-weight:700;color:var(--t1);margin:2px 0 0}
+.mcp-field{display:flex;flex-direction:column;gap:5px}
+.mcp-field label{font-size:9px;color:var(--t2);font-weight:600}
+.mcp-field input,.mcp-workspace textarea{width:100%;min-width:0;padding:8px 9px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--t0);font:10px 'JetBrains Mono',monospace}
+.mcp-field input:focus,.mcp-workspace textarea:focus{outline:none;border-color:var(--acc)}
+.mcp-workspace textarea{resize:vertical;min-height:170px;line-height:1.5;white-space:pre;tab-size:2}
+.mcp-tool{padding:9px 10px;margin-top:6px;background:var(--bg0);border:1px solid var(--border2);border-radius:7px}
+.mcp-tool-name{font:600 9px 'JetBrains Mono',monospace;color:var(--acc);overflow-wrap:anywhere}
+.mcp-tool-desc{font-size:9px;line-height:1.5;color:var(--t2);margin-top:5px}
+.mcp-note{padding:9px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:9px;line-height:1.55;overflow-wrap:anywhere}
+.mcp-actions{display:flex;flex-wrap:wrap;gap:6px}
+.mcp-muted{font-size:9px;color:var(--t3);line-height:1.5}
+.mcp-count{font-size:9px;color:var(--t3);font-weight:500}
+
     </style>
 </head>
 <body>
@@ -12674,6 +12693,12 @@ function App(){
     var _aiRefactorPath=useState(''),aiRefactorPath=_aiRefactorPath[0],setAiRefactorPath=_aiRefactorPath[1];
     var _aiRefactorInstructions=useState(''),aiRefactorInstructions=_aiRefactorInstructions[0],setAiRefactorInstructions=_aiRefactorInstructions[1];
     var _aiProposal=useState(null),aiProposal=_aiProposal[0],setAiProposal=_aiProposal[1];
+    var _mcpInstallPath=useState(''),mcpInstallPath=_mcpInstallPath[0],setMcpInstallPath=_mcpInstallPath[1];
+    var _mcpAllowedRoots=useState(''),mcpAllowedRoots=_mcpAllowedRoots[0],setMcpAllowedRoots=_mcpAllowedRoots[1];
+    var _mcpDefaultRoot=useState(''),mcpDefaultRoot=_mcpDefaultRoot[0],setMcpDefaultRoot=_mcpDefaultRoot[1];
+    var _mcpCacheTtl=useState('30000'),mcpCacheTtl=_mcpCacheTtl[0],setMcpCacheTtl=_mcpCacheTtl[1];
+    var _mcpNotice=useState(''),mcpNotice=_mcpNotice[0],setMcpNotice=_mcpNotice[1];
+
     var isMobile=viewportWidth<=980;
     var svgRef=useRef(null);
     var graph3dRef=useRef(null);
@@ -17570,6 +17595,104 @@ function App(){
         );
     }
 
+    function mcpBuildClientConfig(){
+        var installPath=String(mcpInstallPath||'').trim().replace(/\/+$/,'');
+        var allowedRoots=String(mcpAllowedRoots||'').trim();
+        var defaultRoot=String(mcpDefaultRoot||'').trim();
+        var cacheTtl=String(mcpCacheTtl||'30000').trim();
+        if(!installPath||!allowedRoots)return null;
+        var env={
+            CODEFLOW_ALLOWED_ROOTS:allowedRoots,
+            CODEFLOW_MCP_CACHE_TTL_MS:cacheTtl||'30000'
+        };
+        if(defaultRoot)env.CODEFLOW_MCP_ROOT=defaultRoot;
+        return {mcpServers:{codeflow:{command:'node',args:[installPath+'/apps/mcp/src/index.js'],env:env}}};
+    }
+
+    async function mcpCopyText(value,label){
+        try{
+            if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(value);
+            else{
+                var area=document.createElement('textarea');
+                area.value=value;area.setAttribute('readonly','');
+                area.style.position='fixed';area.style.opacity='0';
+                document.body.appendChild(area);area.select();
+                var copied=document.execCommand('copy');
+                document.body.removeChild(area);
+                if(!copied)throw new Error('Clipboard permission unavailable');
+            }
+            setMcpNotice(label+' copied to clipboard.');
+        }catch(error){setMcpNotice('Could not copy automatically. Select the text and copy it manually.');}
+    }
+
+    function renderMcpWorkspace(){
+        var config=mcpBuildClientConfig();
+        var configText=config?JSON.stringify(config,null,2):'Enter the absolute CodeFlow clone path and allowed repository roots to generate the MCP client configuration.';
+        var tools=[
+            ['codeflow_analyze_repository','Repository metrics, architecture issues, dependencies and static security findings.'],
+            ['codeflow_search_code','Literal source search with matching file paths, line numbers and excerpts.'],
+            ['codeflow_get_file_context','Read a bounded source-file range with line numbers.'],
+            ['codeflow_get_dependency_graph','Inspect dependency edges, optionally narrowed to one file.'],
+            ['codeflow_get_blast_radius','Estimate files affected by changing a selected file.'],
+            ['codeflow_get_security_findings','Read findings from the existing static security scanner.'],
+            ['codeflow_find_symbol','Find extracted functions and symbols by name.'],
+            ['codeflow_get_file_dependencies','List a file’s direct dependencies and dependent files.']
+        ];
+        var launchCommand='cd '+(mcpInstallPath.trim()||'/absolute/path/to/codeflow')+' && CODEFLOW_ALLOWED_ROOTS="'+(mcpAllowedRoots.trim()||'/absolute/path/to/projects')+'" pnpm mcp';
+        return React.createElement('div',{className:'mcp-workspace'},
+            React.createElement('div',{className:'mcp-hero'},
+                React.createElement('div',{className:'mcp-hero-title'},
+                    React.createElement('span',null,'CODEFLOW MCP SERVER'),
+                    React.createElement('span',{className:'mcp-transport'},'STDIO')
+                ),
+                React.createElement('div',{className:'mcp-muted',style:{marginTop:7}},'External AI clients connect by launching the local MCP process. This panel provides setup and tool discovery; the MCP host owns the live connection lifecycle.'),
+                React.createElement('div',{className:'mcp-actions',style:{marginTop:10}},
+                    React.createElement('span',{className:'badge badge-success'},'8 read-only tools'),
+                    React.createElement('span',{className:'badge badge-default'},'No shell execution'),
+                    React.createElement('span',{className:'badge badge-default'},'Local process')
+                )
+            ),
+            React.createElement('div',{className:'mcp-section-title'},'Client configuration'),
+            React.createElement('div',{className:'mcp-field'},
+                React.createElement('label',{htmlFor:'mcp-install-path'},'Absolute path to your CodeFlow clone'),
+                React.createElement('input',{id:'mcp-install-path',value:mcpInstallPath,onChange:function(e){setMcpInstallPath(e.target.value);},placeholder:'/home/you/Projects/codeflow',spellCheck:false})
+            ),
+            React.createElement('div',{className:'mcp-field'},
+                React.createElement('label',{htmlFor:'mcp-allowed-roots'},'Allowed repository roots (path-delimited)'),
+                React.createElement('input',{id:'mcp-allowed-roots',value:mcpAllowedRoots,onChange:function(e){setMcpAllowedRoots(e.target.value);},placeholder:'/home/you/Projects',spellCheck:false})
+            ),
+            React.createElement('div',{className:'mcp-field'},
+                React.createElement('label',{htmlFor:'mcp-default-root'},'Default repository path (optional)'),
+                React.createElement('input',{id:'mcp-default-root',value:mcpDefaultRoot,onChange:function(e){setMcpDefaultRoot(e.target.value);},placeholder:'/home/you/Projects/my-repo',spellCheck:false})
+            ),
+            React.createElement('div',{className:'mcp-field'},
+                React.createElement('label',{htmlFor:'mcp-cache-ttl'},'Analysis cache TTL (milliseconds)'),
+                React.createElement('input',{id:'mcp-cache-ttl',value:mcpCacheTtl,onChange:function(e){setMcpCacheTtl(e.target.value);},placeholder:'30000',inputMode:'numeric'})
+            ),
+            React.createElement('div',{className:'mcp-actions'},
+                React.createElement('button',{className:'top-btn primary',onClick:function(){if(!config){setMcpNotice('Enter both the absolute CodeFlow clone path and allowed repository roots first.');return;}mcpCopyText(JSON.stringify(config,null,2),'MCP client config');},disabled:!config},'Copy MCP client config'),
+                React.createElement('button',{className:'top-btn',onClick:function(){mcpCopyText(launchCommand,'MCP launch command');}},'Copy launch command')
+            ),
+            React.createElement('div',{className:'mcp-field'},
+                React.createElement('label',null,'MCP client JSON — paste under mcpServers in your client settings'),
+                React.createElement('textarea',{readOnly:true,value:configText,rows:9,'aria-label':'MCP client configuration'})
+            ),
+            mcpNotice&&React.createElement('div',{className:'mcp-note','aria-live':'polite'},mcpNotice),
+            React.createElement('div',{className:'mcp-note'},'The server does not expose an HTTP health endpoint because it uses stdio transport. A live Connected/Disconnected badge here would be misleading. Check the MCP client’s server status/logs to confirm its process is running.'),
+            React.createElement('div',{className:'mcp-section-title'},'Available tools'),
+            React.createElement('div',{className:'mcp-count'},tools.length+' tools · Read-only · Repository paths are constrained by CODEFLOW_ALLOWED_ROOTS'),
+            tools.map(function(tool){return React.createElement('div',{key:tool[0],className:'mcp-tool'},
+                React.createElement('div',{className:'mcp-tool-name'},tool[0]),
+                React.createElement('div',{className:'mcp-tool-desc'},tool[1])
+            );}),
+            React.createElement('div',{className:'mcp-section-title'},'Security boundary'),
+            React.createElement('div',{className:'mcp-note'},'MCP reads only repositories under CODEFLOW_ALLOWED_ROOTS. Sensitive credential paths are filtered, file context is bounded, and tools do not execute commands or modify files. The scanner cannot detect every secret embedded in normal source files.'),
+            React.createElement('div',{className:'mcp-actions'},
+                React.createElement('button',{className:'top-btn',onClick:function(){window.open('./apps/mcp/README.md','_blank','noopener');}},'Open MCP documentation')
+            )
+        );
+    }
+
     var health=useMemo(function(){return calcHealth(data);},[data]);
     return React.createElement('div',{className:'app',style:{'--topbar-height':topbarHeight+'px'}},
         React.createElement('input',{ref:zipInputRef,type:'file',accept:'.zip,application/zip,application/x-zip-compressed',style:{display:'none'},onChange:handleZipSelected}),
@@ -17886,13 +18009,16 @@ function App(){
                     function onUp(){document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
                     document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
                 }}),
-                data?React.createElement(React.Fragment,null,
+                (data||rightTab==='mcp')?React.createElement(React.Fragment,null,
                     React.createElement('div',{className:'panel-tabs'},
-                        React.createElement('button',{className:'panel-tab'+(rightTab==='details'?' active':''),onClick:function(){setRightTab('details');setDrillDown(null);}},selected?iconLabel('file','FILE'):(graphConfig.vizType==='architecture'?iconLabel('layers','ARCH'):iconLabel('search','ISSUES'))),
-                        React.createElement('button',{className:'panel-tab'+(rightTab==='patterns'?' active':''),onClick:function(){setRightTab('patterns');setDrillDown(null);}},iconLabel('puzzle','PATTERNS'),React.createElement('span',{className:'panel-tab-pill'},data.patterns.length)),
-                        React.createElement('button',{className:'panel-tab'+(rightTab==='security'?' active':''),onClick:function(){setRightTab('security');setDrillDown(null);}},iconLabel('security','SECURITY'),data.stats.security>0&&React.createElement('span',{className:'panel-tab-pill alert'},data.stats.security)),
-                        React.createElement('button',{className:'panel-tab'+(rightTab==='suggestions'?' active':''),onClick:function(){setRightTab('suggestions');setDrillDown(null);}},iconLabel('action','ACTIONS'),data.suggestions&&data.suggestions.length>0&&React.createElement('span',{className:'panel-tab-pill alert'},data.suggestions.length)),
-                        React.createElement('button',{className:'panel-tab'+(rightTab==='ai'?' active':''),onClick:function(){setRightTab('ai');setDrillDown(null);}},iconLabel('spark','AI'))
+                        data&&React.createElement(React.Fragment,null,
+                            React.createElement('button',{className:'panel-tab'+(rightTab==='details'?' active':''),onClick:function(){setRightTab('details');setDrillDown(null);}},selected?iconLabel('file','FILE'):(graphConfig.vizType==='architecture'?iconLabel('layers','ARCH'):iconLabel('search','ISSUES'))),
+                            React.createElement('button',{className:'panel-tab'+(rightTab==='patterns'?' active':''),onClick:function(){setRightTab('patterns');setDrillDown(null);}},iconLabel('puzzle','PATTERNS'),React.createElement('span',{className:'panel-tab-pill'},data.patterns.length)),
+                            React.createElement('button',{className:'panel-tab'+(rightTab==='security'?' active':''),onClick:function(){setRightTab('security');setDrillDown(null);}},iconLabel('security','SECURITY'),data.stats.security>0&&React.createElement('span',{className:'panel-tab-pill alert'},data.stats.security)),
+                            React.createElement('button',{className:'panel-tab'+(rightTab==='suggestions'?' active':''),onClick:function(){setRightTab('suggestions');setDrillDown(null);}},iconLabel('action','ACTIONS'),data.suggestions&&data.suggestions.length>0&&React.createElement('span',{className:'panel-tab-pill alert'},data.suggestions.length)),
+                            React.createElement('button',{className:'panel-tab'+(rightTab==='ai'?' active':''),onClick:function(){setRightTab('ai');setDrillDown(null);}},iconLabel('spark','AI'))
+                        ),
+                        React.createElement('button',{className:'panel-tab'+(rightTab==='mcp'?' active':''),onClick:function(){setRightTab('mcp');setDrillDown(null);}},iconLabel('terminal','MCP'))
                     ),
                     React.createElement('div',{className:'panel-content'},
                         rightTab==='details'&&(selected?React.createElement(React.Fragment,null,
@@ -18143,12 +18269,14 @@ function App(){
                                 )
                             )
                         ),
-                        rightTab==='ai'&&renderAIWorkspace()
+                        rightTab==='ai'&&renderAIWorkspace(),
+                        rightTab==='mcp'&&renderMcpWorkspace()
                     )
                 ):React.createElement('div',{className:'empty-state'},
                     React.createElement(Icon,{name:'chart',size:'xxl',className:'empty-icon'}),
                     React.createElement('div',{className:'empty-title'},'Analysis'),
-                    React.createElement('div',{className:'empty-desc'},'Analyze a GitHub repo, local folder, or ZIP archive to see insights')
+                    React.createElement('div',{className:'empty-desc'},'Analyze a GitHub repo, local folder, or ZIP archive to see insights'),
+                    React.createElement('button',{className:'top-btn primary',style:{marginTop:12},onClick:function(){setRightTab('mcp');}},'Open MCP interface')
                 )
             )
         ),

@@ -498,6 +498,12 @@ Run `docker compose up -d postgres` and `pnpm db:migrate` before starting the AP
 
 For a protected local API, enter `CODEFLOW_API_TOKEN` in the AI panel. The token stays in the page's memory and is not written to browser storage. Browser-only GitHub, folder-picker and ZIP analyses are not silently uploaded to the AI backend; use the CLI so the backend can read the same local checkout.
 
+### MCP server interface
+
+The original CodeFlow UI includes an **MCP** panel in the right-side workspace. It lists the eight read-only tools, shows the stdio transport and security boundary, and generates a client configuration snippet from your local CodeFlow clone path and allowed repository roots. Use **Copy MCP client config** and paste the JSON under `mcpServers` in your MCP host's configuration.
+
+The MCP server uses stdio, so connection lifecycle belongs to the external MCP host. The browser panel intentionally does not show a fake live connection status; check the host's server status and logs instead. The panel is available before running an analysis by selecting **Open MCP interface** in the original UI.
+
 ### LLM providers
 
 Supported adapters: OpenAI, Anthropic, Gemini, Ollama and OpenAI-compatible endpoints. Configure chat and embedding providers independently in `.env`. Anthropic currently provides chat only; configure another provider for embeddings. If embedding credentials are unavailable, retrieval falls back to keyword search.
