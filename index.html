@@ -772,6 +772,33 @@ body{height:100dvh;min-height:100dvh}
 .legend{bottom:70px}
 .legend.with-color-by{bottom:70px}
 }
+    
+.ai-workspace{display:flex;flex-direction:column;gap:10px}
+.ai-config{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:10px;background:var(--bg0);border:1px solid var(--border2);border-radius:8px}
+.ai-config input,.ai-workspace input,.ai-workspace textarea,.ai-workspace select{width:100%;min-width:0;padding:8px 9px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--t0);font:10px 'JetBrains Mono',monospace}
+.ai-workspace input:focus,.ai-workspace textarea:focus,.ai-workspace select:focus{outline:none;border-color:var(--acc)}
+.ai-workspace textarea{resize:vertical;min-height:58px;line-height:1.5}
+.ai-subtabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.ai-subtab{padding:8px 3px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--t2);font:600 9px 'JetBrains Mono',monospace;cursor:pointer}
+.ai-subtab.active{background:var(--accbg);border-color:var(--acc);color:var(--acc)}
+.ai-status{padding:8px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:9px;line-height:1.5;overflow-wrap:anywhere}
+.ai-error{padding:8px 9px;background:rgba(255,95,95,.08);border:1px solid rgba(255,95,95,.3);border-radius:6px;color:var(--red);font-size:9px;line-height:1.5;overflow-wrap:anywhere}
+.ai-chat-list{display:flex;flex-direction:column;gap:8px;max-height:330px;overflow-y:auto;padding:2px}
+.ai-message{padding:9px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg0);font-size:10px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-message.user{border-color:var(--border);background:var(--bg2)}
+.ai-message-role{font-size:8px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:4px;letter-spacing:.5px}
+.ai-citations{margin-top:7px;padding-top:6px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:4px}
+.ai-citation{font-size:9px;color:var(--acc);text-align:left;background:none;border:0;padding:0;font:9px 'JetBrains Mono',monospace;cursor:pointer}
+.ai-finding{padding:10px;margin-bottom:7px;background:var(--bg0);border:1px solid var(--border2);border-radius:7px}
+.ai-finding-title{font-size:10px;font-weight:600;color:var(--t0);line-height:1.4}
+.ai-finding-desc{font-size:9px;color:var(--t2);line-height:1.5;margin-top:5px;overflow-wrap:anywhere}
+.ai-finding-meta{font-size:8px;color:var(--t3);margin-top:6px;overflow-wrap:anywhere}
+.ai-diff{max-height:300px;overflow:auto;margin-top:9px;padding:9px;background:var(--bg0);border:1px solid var(--border2);border-radius:6px;color:var(--t1);font:9px/1.5 'JetBrains Mono',monospace;white-space:pre}
+.ai-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ai-workspace .top-btn{font-size:9px}
+.ai-muted{font-size:9px;color:var(--t3);line-height:1.5}
+@media(max-width:980px){.ai-chat-list{max-height:260px}}
+
     </style>
 </head>
 <body>
@@ -12629,6 +12656,24 @@ function App(){
     var _cli=useState(null),cliStatus=_cli[0],setCliStatus=_cli[1];
     var _cliDirty=useState([]),cliDirty=_cliDirty[0],setCliDirty=_cliDirty[1];
     var _cliLive=useState(Object.create(null)),cliLiveByPath=_cliLive[0],setCliLiveByPath=_cliLive[1];
+    var _aiTab=useState('chat'),aiTab=_aiTab[0],setAiTab=_aiTab[1];
+    var _aiApiBase=useState('http://127.0.0.1:4317'),aiApiBase=_aiApiBase[0],setAiApiBase=_aiApiBase[1];
+    var _aiApiToken=useState(''),aiApiToken=_aiApiToken[0],setAiApiToken=_aiApiToken[1];
+    var _aiProject=useState(null),aiProject=_aiProject[0],setAiProject=_aiProject[1];
+    var _aiIndexResult=useState(null),aiIndexResult=_aiIndexResult[0],setAiIndexResult=_aiIndexResult[1];
+    var _aiBusy=useState(false),aiBusy=_aiBusy[0],setAiBusy=_aiBusy[1];
+    var _aiChatBusy=useState(false),aiChatBusy=_aiChatBusy[0],setAiChatBusy=_aiChatBusy[1];
+    var _aiAuditBusy=useState(false),aiAuditBusy=_aiAuditBusy[0],setAiAuditBusy=_aiAuditBusy[1];
+    var _aiRefactorBusy=useState(false),aiRefactorBusy=_aiRefactorBusy[0],setAiRefactorBusy=_aiRefactorBusy[1];
+    var _aiError=useState(''),aiError=_aiError[0],setAiError=_aiError[1];
+    var _aiNotice=useState(''),aiNotice=_aiNotice[0],setAiNotice=_aiNotice[1];
+    var _aiMessages=useState([]),aiMessages=_aiMessages[0],setAiMessages=_aiMessages[1];
+    var _aiQuestion=useState(''),aiQuestion=_aiQuestion[0],setAiQuestion=_aiQuestion[1];
+    var _aiSessionId=useState(null),aiSessionId=_aiSessionId[0],setAiSessionId=_aiSessionId[1];
+    var _aiAuditFindings=useState([]),aiAuditFindings=_aiAuditFindings[0],setAiAuditFindings=_aiAuditFindings[1];
+    var _aiRefactorPath=useState(''),aiRefactorPath=_aiRefactorPath[0],setAiRefactorPath=_aiRefactorPath[1];
+    var _aiRefactorInstructions=useState(''),aiRefactorInstructions=_aiRefactorInstructions[0],setAiRefactorInstructions=_aiRefactorInstructions[1];
+    var _aiProposal=useState(null),aiProposal=_aiProposal[0],setAiProposal=_aiProposal[1];
     var isMobile=viewportWidth<=980;
     var svgRef=useRef(null);
     var graph3dRef=useRef(null);
@@ -17322,6 +17367,204 @@ function App(){
             )
         );
     }
+    async function aiApiRequest(path,options){
+        options=options||{};
+        var headers=Object.assign({},options.headers||{});
+        if(options.body!=null)headers['Content-Type']='application/json';
+        if(aiApiToken.trim())headers.Authorization='Bearer '+aiApiToken.trim();
+        var base=String(aiApiBase||'http://127.0.0.1:4317').trim().replace(/\/+$/,'');
+        var response=await fetch(base+path,Object.assign({},options,{headers:headers}));
+        var payload=await response.json().catch(function(){return {};});
+        if(!response.ok)throw new Error(payload.error||('AI API request failed ('+response.status+')'));
+        return payload;
+    }
+
+    async function aiConnectAndIndex(){
+        if(!cliStatus||!cliStatus.ok||!cliStatus.root){
+            setAiError('The AI backend needs a local repository path. Start the original UI through CodeFlow CLI or set CODEFLOW_WATCH_ROOT before pnpm dev.');
+            return;
+        }
+        setAiBusy(true);setAiError('');setAiNotice('Checking AI API and registering repository...');
+        try{
+            await aiApiRequest('/api/providers');
+            var registered=await aiApiRequest('/api/projects',{
+                method:'POST',
+                body:JSON.stringify({rootPath:cliStatus.root,name:cliStatus.name||undefined})
+            });
+            var project=registered.project;
+            if(!project||!project.id)throw new Error('The API did not return a project identifier');
+            setAiProject(project);
+            setAiNotice('Indexing '+(project.name||cliStatus.name||'repository')+'...');
+            var indexed=await aiApiRequest('/api/projects/'+encodeURIComponent(project.id)+'/index',{method:'POST'});
+            setAiIndexResult(indexed.indexing||indexed);
+            setAiSessionId(null);setAiMessages([]);
+            setAiNotice('Repository indexed. AI chat, security audit and refactoring are ready.');
+        }catch(error){
+            setAiError(error&&error.message?error.message:'Could not connect to CodeFlow AI API');
+            setAiNotice('');
+        }finally{setAiBusy(false);}
+    }
+
+    async function aiSendChat(){
+        var question=String(aiQuestion||'').trim();
+        if(!question||aiChatBusy)return;
+        if(!aiProject){setAiError('Connect and index the local repository first.');return;}
+        setAiError('');setAiNotice('');
+        setAiQuestion('');
+        setAiMessages(function(previous){return previous.concat([{role:'user',content:question}]);});
+        setAiChatBusy(true);
+        try{
+            var response=await aiApiRequest('/api/chat',{
+                method:'POST',
+                body:JSON.stringify({projectId:aiProject.id,sessionId:aiSessionId||undefined,question:question})
+            });
+            setAiSessionId(response.sessionId||aiSessionId);
+            setAiMessages(function(previous){return previous.concat([{role:'assistant',content:response.answer||'No answer returned.',citations:response.citations||[]}]);});
+        }catch(error){setAiError(error&&error.message?error.message:'AI chat request failed');}
+        finally{setAiChatBusy(false);}
+    }
+
+    async function aiRunSecurityAudit(){
+        if(!aiProject){setAiError('Connect and index the local repository first.');return;}
+        setAiAuditBusy(true);setAiError('');setAiNotice('Running static findings through the AI security review...');
+        try{
+            var response=await aiApiRequest('/api/security/audit',{
+                method:'POST',body:JSON.stringify({projectId:aiProject.id,useAI:true})
+            });
+            var findings=response.audit&&Array.isArray(response.audit.findings)?response.audit.findings:[];
+            setAiAuditFindings(findings);
+            setAiNotice('Audit complete: '+findings.length+' finding(s) reviewed.');
+        }catch(error){setAiError(error&&error.message?error.message:'AI security audit failed');setAiNotice('');}
+        finally{setAiAuditBusy(false);}
+    }
+
+    async function aiCreateRefactorProposal(){
+        var filePath=String(aiRefactorPath||(selected&&selected.path)||'').trim();
+        var instructions=String(aiRefactorInstructions||'').trim();
+        if(!aiProject){setAiError('Connect and index the local repository first.');return;}
+        if(!filePath||instructions.length<8){setAiError('Select a file and enter a specific refactoring instruction (at least 8 characters).');return;}
+        setAiRefactorBusy(true);setAiError('');setAiNotice('Generating a refactoring proposal...');setAiProposal(null);
+        try{
+            var response=await aiApiRequest('/api/refactoring/proposals',{
+                method:'POST',body:JSON.stringify({projectId:aiProject.id,filePath:filePath,instructions:instructions})
+            });
+            setAiProposal(response.proposal||null);
+            setAiNotice('Proposal generated. Review the diff, then explicitly approve it before applying.');
+        }catch(error){setAiError(error&&error.message?error.message:'Could not generate refactoring proposal');setAiNotice('');}
+        finally{setAiRefactorBusy(false);}
+    }
+
+    async function aiApproveProposal(){
+        if(!aiProject||!aiProposal||!aiProposal.id)return;
+        setAiRefactorBusy(true);setAiError('');
+        try{
+            var response=await aiApiRequest('/api/refactoring/'+encodeURIComponent(aiProposal.id)+'/approve',{
+                method:'POST',body:JSON.stringify({projectId:aiProject.id})
+            });
+            setAiProposal(Object.assign({},aiProposal,response.proposal||{status:'approved'}));
+            setAiNotice('Proposal approved. Applying is a separate action.');
+        }catch(error){setAiError(error&&error.message?error.message:'Could not approve proposal');}
+        finally{setAiRefactorBusy(false);}
+    }
+
+    async function aiApplyProposal(){
+        if(!aiProject||!aiProposal||aiProposal.status!=='approved')return;
+        setAiRefactorBusy(true);setAiError('');
+        try{
+            var response=await aiApiRequest('/api/refactoring/'+encodeURIComponent(aiProposal.id)+'/apply',{
+                method:'POST',body:JSON.stringify({projectId:aiProject.id})
+            });
+            setAiProposal(Object.assign({},aiProposal,{status:'applied'}));
+            setAiNotice('Applied '+((response.result&&response.result.filePath)||aiProposal.file_path||'the refactor')+'. The CLI watcher will detect the file change.');
+        }catch(error){setAiError(error&&error.message?error.message:'Could not apply refactoring proposal');}
+        finally{setAiRefactorBusy(false);}
+    }
+
+    function renderAIWorkspace(){
+        var connected=!!(cliStatus&&cliStatus.ok&&cliStatus.root);
+        var fileChoices=data&&Array.isArray(data.files)?data.files:[];
+        var activeFile=aiRefactorPath||(selected&&selected.path)||'';
+        return React.createElement('div',{className:'ai-workspace'},
+            React.createElement('div',{className:'ai-config'},
+                React.createElement('div',{style:{fontSize:10,fontWeight:700,color:'var(--t1)'}},'CODEFLOW AI'),
+                React.createElement('input',{type:'text','aria-label':'AI API URL',value:aiApiBase,onChange:function(e){setAiApiBase(e.target.value);},placeholder:'http://127.0.0.1:4317'}),
+                React.createElement('input',{type:'password','aria-label':'AI API token',value:aiApiToken,onChange:function(e){setAiApiToken(e.target.value);},placeholder:'API token (only when CODEFLOW_API_TOKEN is set)'}),
+                React.createElement('div',{className:'ai-actions'},
+                    React.createElement('button',{className:'top-btn primary',onClick:aiConnectAndIndex,disabled:aiBusy||!connected},aiBusy?'Indexing...':'Connect & Index Local Repo'),
+                    React.createElement('span',{className:'ai-muted'},aiProject?'Project connected':'Not connected')
+                ),
+                !connected&&React.createElement('div',{className:'ai-muted'},'AI indexing requires a local checkout exposed by CodeFlow CLI. GitHub-only, browser-folder and ZIP analyses remain browser-local and are not uploaded automatically.'),
+                aiProject&&React.createElement('div',{className:'ai-status'},'Project: ',aiProject.name||aiProject.root_path||aiProject.id,aiIndexResult?' · Indexed '+(aiIndexResult.indexedFiles||0)+' files':''),
+                aiNotice&&React.createElement('div',{className:'ai-status'},aiNotice),
+                aiError&&React.createElement('div',{className:'ai-error'},aiError)
+            ),
+            React.createElement('div',{className:'ai-subtabs',role:'tablist','aria-label':'AI tools'},
+                React.createElement('button',{className:'ai-subtab'+(aiTab==='chat'?' active':''),onClick:function(){setAiTab('chat');}},'CHAT'),
+                React.createElement('button',{className:'ai-subtab'+(aiTab==='security'?' active':''),onClick:function(){setAiTab('security');}},'SECURITY'),
+                React.createElement('button',{className:'ai-subtab'+(aiTab==='refactor'?' active':''),onClick:function(){setAiTab('refactor');}},'REFACTOR')
+            ),
+            aiTab==='chat'&&React.createElement(React.Fragment,null,
+                React.createElement('div',{className:'ai-chat-list','aria-live':'polite'},
+                    aiMessages.length?aiMessages.map(function(message,index){
+                        return React.createElement('div',{key:index,className:'ai-message'+(message.role==='user'?' user':'')},
+                            React.createElement('div',{className:'ai-message-role'},message.role==='user'?'YOU':'CODEFLOW AI'),
+                            message.content,
+                            message.citations&&message.citations.length>0&&React.createElement('div',{className:'ai-citations'},
+                                message.citations.map(function(citation,i){
+                                    return React.createElement('button',{key:i,className:'ai-citation',onClick:function(){if(citation.path)goToFile(citation.path);}},citation.path,':',citation.startLine,'-',citation.endLine);
+                                })
+                            )
+                        );
+                    }):React.createElement('div',{className:'ai-status'},'Ask questions about the indexed repository. Answers include source citations when the index has relevant context.')
+                ),
+                React.createElement('textarea',{value:aiQuestion,onChange:function(e){setAiQuestion(e.target.value);},placeholder:'Ask about architecture, dependencies, implementation, or a specific file...',rows:3,onKeyDown:function(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();aiSendChat();}}}),
+                React.createElement('div',{className:'ai-actions'},
+                    React.createElement('button',{className:'top-btn primary',onClick:aiSendChat,disabled:aiChatBusy||!aiQuestion.trim()||!aiProject},aiChatBusy?'Thinking...':'Send question'),
+                    React.createElement('span',{className:'ai-muted'},'Ctrl/⌘ + Enter to send')
+                )
+            ),
+            aiTab==='security'&&React.createElement(React.Fragment,null,
+                React.createElement('div',{className:'ai-muted'},'AI reviews the original analyzer’s static findings and provides validity, severity, rationale and remediation guidance.'),
+                React.createElement('button',{className:'top-btn primary',onClick:aiRunSecurityAudit,disabled:aiAuditBusy||!aiProject},aiAuditBusy?'Auditing...':'Run AI Security Audit'),
+                aiAuditFindings.length===0?React.createElement('div',{className:'ai-status'},'No audit results yet. Run an audit to review this repository.'):
+                aiAuditFindings.map(function(finding,index){
+                    var review=finding.aiReview||{};
+                    var severity=review.severity||finding.severity||'info';
+                    return React.createElement('div',{key:index,className:'ai-finding'},
+                        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}},
+                            React.createElement('span',{className:'badge badge-'+(severity==='critical'||severity==='high'?'danger':severity==='medium'?'warning':severity==='low'?'info':'default')},String(severity).toUpperCase()),
+                            React.createElement('span',{className:'ai-finding-title'},finding.title||finding.type||'Security finding')
+                        ),
+                        React.createElement('div',{className:'ai-finding-desc'},finding.description||finding.desc||finding.message||'No description supplied.'),
+                        React.createElement('div',{className:'ai-finding-meta'},(finding.path||finding.file||'Unknown file')+(finding.line?':'+finding.line:''),review.validity?' · AI: '+review.validity:'',typeof review.confidence==='number'?' · confidence '+Math.round(review.confidence*100)+'%':''),
+                        review.reason&&React.createElement('div',{className:'ai-finding-desc'},'AI review: ',review.reason),
+                        (review.fix||finding.recommendation||finding.patch)&&React.createElement('div',{className:'ai-finding-desc'},'Suggested fix: ',review.fix||finding.recommendation||finding.patch)
+                    );
+                })
+            ),
+            aiTab==='refactor'&&React.createElement(React.Fragment,null,
+                React.createElement('div',{className:'ai-muted'},'Generate a single-file replacement proposal. Review the complete diff, approve it, then apply it as a separate action.'),
+                React.createElement('input',{value:activeFile,onChange:function(e){setAiRefactorPath(e.target.value);},placeholder:'Path relative to repository root (e.g. src/App.tsx)','aria-label':'Refactor file path'}),
+                fileChoices.length>0&&React.createElement('select',{value:activeFile,onChange:function(e){setAiRefactorPath(e.target.value);},'aria-label':'Choose analyzed file'},
+                    React.createElement('option',{value:''},'Choose a file from the current analysis'),
+                    fileChoices.filter(function(file){return file&&file.path;}).slice(0,500).map(function(file){return React.createElement('option',{key:file.path,value:file.path},file.path);})
+                ),
+                React.createElement('textarea',{value:aiRefactorInstructions,onChange:function(e){setAiRefactorInstructions(e.target.value);},placeholder:'Describe the exact refactor. Keep the behavior unchanged unless requested...',rows:4}),
+                React.createElement('button',{className:'top-btn primary',onClick:aiCreateRefactorProposal,disabled:aiRefactorBusy||!aiProject||!activeFile||aiRefactorInstructions.trim().length<8},aiRefactorBusy?'Generating...':'Generate proposal'),
+                aiProposal&&React.createElement('div',{className:'ai-finding'},
+                    React.createElement('div',{className:'ai-finding-title'},aiProposal.summary||'Refactoring proposal'),
+                    React.createElement('div',{className:'ai-finding-meta'},aiProposal.file_path||activeFile,' · ',String(aiProposal.status||'pending').toUpperCase()),
+                    aiProposal.unified_diff&&React.createElement('pre',{className:'ai-diff'},aiProposal.unified_diff),
+                    React.createElement('div',{className:'ai-actions'},
+                        aiProposal.status==='pending'&&React.createElement('button',{className:'top-btn',onClick:aiApproveProposal,disabled:aiRefactorBusy},'Approve proposal'),
+                        aiProposal.status==='approved'&&React.createElement('button',{className:'top-btn primary',onClick:aiApplyProposal,disabled:aiRefactorBusy},'Apply approved change'),
+                        aiProposal.status==='applied'&&React.createElement('span',{className:'badge badge-success'},'Applied')
+                    )
+                )
+            )
+        );
+    }
+
     var health=useMemo(function(){return calcHealth(data);},[data]);
     return React.createElement('div',{className:'app',style:{'--topbar-height':topbarHeight+'px'}},
         React.createElement('input',{ref:zipInputRef,type:'file',accept:'.zip,application/zip,application/x-zip-compressed',style:{display:'none'},onChange:handleZipSelected}),
@@ -17643,7 +17886,8 @@ function App(){
                         React.createElement('button',{className:'panel-tab'+(rightTab==='details'?' active':''),onClick:function(){setRightTab('details');setDrillDown(null);}},selected?iconLabel('file','FILE'):(graphConfig.vizType==='architecture'?iconLabel('layers','ARCH'):iconLabel('search','ISSUES'))),
                         React.createElement('button',{className:'panel-tab'+(rightTab==='patterns'?' active':''),onClick:function(){setRightTab('patterns');setDrillDown(null);}},iconLabel('puzzle','PATTERNS'),React.createElement('span',{className:'panel-tab-pill'},data.patterns.length)),
                         React.createElement('button',{className:'panel-tab'+(rightTab==='security'?' active':''),onClick:function(){setRightTab('security');setDrillDown(null);}},iconLabel('security','SECURITY'),data.stats.security>0&&React.createElement('span',{className:'panel-tab-pill alert'},data.stats.security)),
-                        React.createElement('button',{className:'panel-tab'+(rightTab==='suggestions'?' active':''),onClick:function(){setRightTab('suggestions');setDrillDown(null);}},iconLabel('action','ACTIONS'),data.suggestions&&data.suggestions.length>0&&React.createElement('span',{className:'panel-tab-pill alert'},data.suggestions.length))
+                        React.createElement('button',{className:'panel-tab'+(rightTab==='suggestions'?' active':''),onClick:function(){setRightTab('suggestions');setDrillDown(null);}},iconLabel('action','ACTIONS'),data.suggestions&&data.suggestions.length>0&&React.createElement('span',{className:'panel-tab-pill alert'},data.suggestions.length)),
+                        React.createElement('button',{className:'panel-tab'+(rightTab==='ai'?' active':''),onClick:function(){setRightTab('ai');setDrillDown(null);}},iconLabel('spark','AI'))
                     ),
                     React.createElement('div',{className:'panel-content'},
                         rightTab==='details'&&(selected?React.createElement(React.Fragment,null,
@@ -17893,7 +18137,8 @@ function App(){
                                     );})
                                 )
                             )
-                        )
+                        ),
+                        rightTab==='ai'&&renderAIWorkspace()
                     )
                 ):React.createElement('div',{className:'empty-state'},
                     React.createElement(Icon,{name:'chart',size:'xxl',className:'empty-icon'}),
