@@ -27,3 +27,11 @@ test('pnpm dev starts the original UI and API under the Turbo TUI', async () => 
   assert.match(root.scripts.dev, /--filter=@codeflow\/classic-ui/);
   assert.equal(turbo.ui, 'tui');
 });
+
+test('local AI endpoint and repository paths are configured through the shared env example', async () => {
+  const env = await readFile(new URL('../.env.example', import.meta.url), 'utf8');
+  assert.match(env, /^CODEFLOW_AI_API_URL=http:\/\/localhost:4317$/m);
+  assert.match(env, /^CODEFLOW_WATCH_ROOT=\.\.\/\.\.$/m);
+  assert.match(env, /^CODEFLOW_ALLOWED_ROOTS=\.\.\/\.\.$/m);
+  assert.match(env, /^CODEFLOW_API_TOKEN=$/m);
+});
