@@ -1,0 +1,12 @@
+{
+  "name": "@codeflow/classic-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../cli/codeflow.mjs \"${CODEFLOW_WATCH_ROOT:-../..}\" --port 4173"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
