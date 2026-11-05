@@ -10,6 +10,11 @@ test('the original CodeFlow UI contains the integrated AI workspace', async () =
   assert.match(html, /async function aiCreateRefactorProposal/);
   assert.match(html, /async function aiApproveProposal/);
   assert.match(html, /async function aiApplyProposal/);
+  assert.match(html, /aiAutoIndexedRootRef/);
+  assert.doesNotMatch(html, /Connect & Index Local Repo/);
+  assert.doesNotMatch(html, /Not connected/);
+  assert.doesNotMatch(html, /aiApiToken|aiApiBase/);
+  assert.match(html, /fetch\(path,Object\.assign/);
   assert.match(html, /\/api\/chat/);
   assert.match(html, /\/api\/security\/audit/);
   assert.match(html, /\/api\/refactoring\/proposals/);

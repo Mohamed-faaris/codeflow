@@ -7,6 +7,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
+import dotenv from 'dotenv';
 
 const IGNORE = new Set([
   'node_modules', '.git', 'vendor', 'dist', 'build', 'out', 'coverage',
@@ -388,10 +389,49 @@ export function openBrowser(url, spawnFn) {
   }
 }
 
+
+async function proxyAiRequest(req, res, url, apiBase, apiToken) {
+  try {
+    const base = new URL(apiBase || 'http://localhost:4317');
+    if (base.protocol !== 'http:' || !LOOPBACK_HOSTS.has(base.hostname)) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'CODEFLOW_AI_API_URL must point to a local HTTP address' }));
+      return;
+    }
+    const target = new URL(url.pathname + url.search, base.origin);
+    const headers = new Headers();
+    if (req.headers['content-type']) headers.set('content-type', req.headers['content-type']);
+    if (apiToken) headers.set('authorization', 'Bearer ' + apiToken);
+    let body;
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      body = Buffer.concat(chunks);
+    }
+    const upstream = await fetch(target, {
+      method: req.method,
+      headers,
+      body,
+      signal: AbortSignal.timeout(120000)
+    });
+    const payload = Buffer.from(await upstream.arrayBuffer());
+    res.writeHead(upstream.status, {
+      'Content-Type': upstream.headers.get('content-type') || 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store'
+    });
+    res.end(payload);
+  } catch {
+    res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Could not reach the local CodeFlow AI API' }));
+  }
+}
+
 export function createCodeflowServer(options) {
   const uiRoot = options.uiRoot;
   const watchRoot = options.watchRoot;
   const name = path.basename(watchRoot);
+  const aiApiUrl = options.aiApiUrl || process.env.CODEFLOW_AI_API_URL || 'http://localhost:4317';
+  const aiApiToken = options.aiApiToken ?? process.env.CODEFLOW_API_TOKEN ?? '';
   const clients = new Set();
   const watchRevs = new Map();
 
@@ -416,6 +456,10 @@ export function createCodeflowServer(options) {
         return;
       }
       const url = parsed.url;
+      if (url.pathname.startsWith('/api/')) {
+        await proxyAiRequest(req, res, url, aiApiUrl, aiApiToken);
+        return;
+      }
       if (url.pathname === '/__codeflow/status') {
         sendJson(res, 200, { ok: true, root: watchRoot, name, watch: !!watchSession.watching });
         return;
@@ -488,6 +532,7 @@ async function main() {
   }
   const here = path.dirname(fileURLToPath(import.meta.url));
   const uiRoot = path.resolve(here, '..');
+  dotenv.config({ path: path.join(uiRoot, '.env') });
   const watchRoot = path.resolve(process.cwd(), parsed.target || '.');
   const stat = await fs.stat(watchRoot).catch(() => null);
   if (!stat || !stat.isDirectory()) {
@@ -504,7 +549,7 @@ async function main() {
     server.once('error', reject);
     server.listen(parsed.port, '127.0.0.1', resolve);
   });
-  const url = 'http://127.0.0.1:' + parsed.port + '/?cli=1';
+  const url = 'http://localhost:' + parsed.port + '/?cli=1';
   console.log('Codeflow UI: ' + url);
   console.log('Watching: ' + watchRoot);
   openBrowser(url);
