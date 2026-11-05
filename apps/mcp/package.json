@@ -1,0 +1,19 @@
+{
+  "name": "@codeflow/mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "build": "node --check src/index.js && node --check src/tools.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@codeflow/repo-analysis": "workspace:*",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "zod": "^4.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

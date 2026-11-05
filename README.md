@@ -453,3 +453,44 @@ If you find CodeFlow useful, please star the repo.
 *Stop guessing. Start seeing.*
 
 </div>
+
+
+---
+
+## AI Workspace and MCP
+
+CodeFlow includes an optional Turborepo workspace for AI-assisted repository work. The original browser analyzer, `index.html`, CLI and GitHub Action remain in place.
+
+### AI capabilities
+
+- **Chat with your codebase:** repository-aware retrieval with file and line citations.
+- **AI Security Auditor:** combines existing static findings with optional LLM review and remediation notes.
+- **AI Refactoring Assistant:** generates a single-file proposal, shows a unified diff, and requires explicit approval before applying.
+
+### Local development
+
+Requirements: Node.js 20+, pnpm 10+, Docker.
+
+```bash
+pnpm install
+cp .env.example .env
+docker compose up -d postgres
+pnpm db:migrate
+pnpm dev
+```
+
+The AI API listens on `http://127.0.0.1:4317`; the AI dashboard listens on `http://127.0.0.1:4174`. Configure repository roots using `CODEFLOW_ALLOWED_ROOTS`. Provider keys are read from server environment variables and are never sent to the dashboard.
+
+### LLM providers
+
+Supported adapters: OpenAI, Anthropic, Gemini, Ollama and OpenAI-compatible endpoints. Configure chat and embedding providers independently in `.env`. Anthropic currently provides chat only; configure another provider for embeddings. If embedding credentials are unavailable, retrieval falls back to keyword search.
+
+**Code privacy:** The browser-only analyzer remains local. The optional AI workspace is different: repository chunks and relevant source context are sent to the LLM or embedding provider you configure when you index, chat, audit or generate a refactor. CodeFlow excludes common credential paths (such as `.env*`, cloud credential directories, private keys and Terraform state) from AI/MCP access, but cannot detect every secret embedded in ordinary source files. Do not use a hosted provider for repositories whose policy forbids external code processing; use Ollama or a private endpoint when appropriate.
+
+### MCP for external agents
+
+CodeFlow includes a read-only MCP server for custom MCP integrations. It exposes repository analysis, literal code search, line-bounded file context, dependency graphs, blast-radius estimates, security findings and symbol lookup.
+
+See [apps/mcp/README.md](./apps/mcp/README.md) and copy [.mcp.example.json](./.mcp.example.json) into your MCP host configuration, replacing the absolute paths.
+
+MCP tools only inspect repositories under `CODEFLOW_ALLOWED_ROOTS`. They do not execute arbitrary shell commands or edit files.

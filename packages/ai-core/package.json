@@ -1,0 +1,25 @@
+{
+  "name": "@codeflow/ai-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./providers": "./src/providers.js",
+    "./chunking": "./src/chunking.js",
+    "./indexer": "./src/indexer.js",
+    "./retrieval": "./src/retrieval.js",
+    "./security": "./src/security.js",
+    "./refactoring": "./src/refactoring.js"
+  },
+  "scripts": {
+    "build": "node --check src/index.js && node --check src/providers.js && node --check src/indexer.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@codeflow/database": "workspace:*",
+    "@codeflow/repo-analysis": "workspace:*",
+    "diff": "^8.0.2"
+  },
+  "engines": { "node": ">=20" }
+}

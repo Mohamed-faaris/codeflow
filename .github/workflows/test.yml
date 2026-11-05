@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 'feature/**']
 
 permissions:
   contents: read
@@ -12,14 +12,40 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: codeflow
+          POSTGRES_USER: codeflow
+          POSTGRES_PASSWORD: codeflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U codeflow -d codeflow"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: Run test suite
-        run: node --test tests/*.test.mjs tests/*.smoke.js
+          node-version: 22
+      - name: Install workspace dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Apply PostgreSQL migrations
+        env:
+          DATABASE_URL: postgresql://codeflow:codeflow@localhost:5432/codeflow
+        run: pnpm db:migrate
+      - name: Run workspace and legacy tests
+        env:
+          DATABASE_URL: postgresql://codeflow:codeflow@localhost:5432/codeflow
+        run: pnpm test
+      - name: Build all workspace packages
+        run: pnpm build
