@@ -479,7 +479,24 @@ pnpm db:migrate
 pnpm dev
 ```
 
-The AI API listens on `http://127.0.0.1:4317`; the AI dashboard listens on `http://127.0.0.1:4174`. Configure repository roots using `CODEFLOW_ALLOWED_ROOTS`. Provider keys are read from server environment variables and are never sent to the dashboard.
+`pnpm dev` opens Turborepo's interactive TUI and starts the original CodeFlow interface at `http://127.0.0.1:4173` plus the AI API at `http://127.0.0.1:4317`. The AI features are integrated into the original interface's right panel under **AI**; the separate dashboard is optional and can still be started with `pnpm start:dashboard`. Set `CODEFLOW_WATCH_ROOT` to the local checkout you want the original UI to watch, and include that checkout in `CODEFLOW_ALLOWED_ROOTS`. The AI panel registers and indexes the CLI-watched checkout before enabling chat, audit and refactoring.
+
+### Using the integrated AI panel
+
+The integrated AI panel works with a local checkout served by CodeFlow CLI. Start the workspace against the target checkout:
+
+```bash
+CODEFLOW_WATCH_ROOT=/absolute/path/to/checkout \
+CODEFLOW_ALLOWED_ROOTS=/absolute/path/to/checkout \
+pnpm dev
+```
+
+Run `docker compose up -d postgres` and `pnpm db:migrate` before starting the API. Configure at least one chat provider in `.env` (for example `OPENAI_API_KEY`, or Ollama for local inference). When the UI opens, select **AI → Connect & Index Local Repo**. The panel then exposes:
+- Repository chat with file/line citations.
+- AI review of the existing static security findings.
+- Single-file refactoring proposals with a diff, a separate approval step, and a separate apply step.
+
+For a protected local API, enter `CODEFLOW_API_TOKEN` in the AI panel. The token stays in the page's memory and is not written to browser storage. Browser-only GitHub, folder-picker and ZIP analyses are not silently uploaded to the AI backend; use the CLI so the backend can read the same local checkout.
 
 ### LLM providers
 

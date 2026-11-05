@@ -3,7 +3,10 @@
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "CODEFLOW_WATCH_ROOT"
+      ]
     },
     "build": {
       "dependsOn": [
@@ -25,5 +28,6 @@
     "lint": {
       "outputs": []
     }
-  }
+  },
+  "ui": "tui"
 }
