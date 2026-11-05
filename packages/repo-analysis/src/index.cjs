@@ -11,6 +11,40 @@ const ANALYZER_PATH = path.join(PACKAGE_ROOT, 'card', 'analyze.js');
 const MAX_ANALYSIS_BYTES = 64 * 1024 * 1024;
 const MAX_CONTEXT_LINES = 500;
 
+const SENSITIVE_DIRECTORY_NAMES = new Set([
+  '.aws', '.azure', '.docker', '.gnupg', '.kube', '.ssh',
+  'credentials', 'secrets'
+]);
+const SENSITIVE_FILE_NAMES = new Set([
+  '.env', '.npmrc', '.pypirc', '.netrc', '.git-credentials',
+  '.pgpass', '.htpasswd', 'credentials', 'secrets',
+  'terraform.tfstate', 'terraform.tfstate.backup'
+]);
+
+function isSensitiveRepositoryPath(relativePath) {
+  if (typeof relativePath !== 'string' || !relativePath.trim()) return false;
+  const segments = relativePath.replace(/\\/g, '/').split('/').filter(Boolean);
+  if (!segments.length) return false;
+
+  const lowerSegments = segments.map((segment) => segment.toLowerCase());
+  if (lowerSegments.slice(0, -1).some((segment) => SENSITIVE_DIRECTORY_NAMES.has(segment))) {
+    return true;
+  }
+
+  const filename = lowerSegments[lowerSegments.length - 1];
+  if (SENSITIVE_FILE_NAMES.has(filename)) return true;
+  if (/^\.env(?:\.|$)/i.test(filename) || /\.env$/i.test(filename)) return true;
+  if (/\.(?:pem|key|p12|pfx|jks|keystore|kdb|ppk|asc|gpg|pgp)$/i.test(filename)) return true;
+  if (/\.tfvars(?:\.json)?$/i.test(filename)) return true;
+  if (/^terraform\.tfstate(?:\.|$)/i.test(filename)) return true;
+  if (/^(?:id_rsa|id_ed25519|id_ecdsa|id_dsa)$/i.test(filename)) return true;
+  if (/(^|[-_.])(secret|secrets|credential|credentials|token|tokens|private[_-]?key)([-_.]|$)/i.test(filename)) {
+    return true;
+  }
+  if (/^(?:service-account|firebase-adminsdk)[-_.].*\.json$/i.test(filename)) return true;
+  return false;
+}
+
 function configuredRoots() {
   const raw = process.env.CODEFLOW_ALLOWED_ROOTS;
   if (!raw) return [process.cwd()];
@@ -44,6 +78,28 @@ function normalizeAnalysis(result) {
   return result;
 }
 
+function filterSensitiveAnalysis(report) {
+  const sensitivePaths = new Set(
+    report.data.files
+      .filter((file) => file?.path && isSensitiveRepositoryPath(file.path))
+      .map((file) => file.path)
+  );
+  if (!sensitivePaths.size) return report;
+
+  const visible = (item) => !sensitivePaths.has(item?.path || item?.file || '');
+  const data = { ...report.data };
+  data.files = data.files.filter(visible);
+  if (Array.isArray(data.functions)) data.functions = data.functions.filter(visible);
+  if (Array.isArray(data.issues)) data.issues = data.issues.filter(visible);
+  if (Array.isArray(data.securityIssues)) data.securityIssues = data.securityIssues.filter(visible);
+  if (Array.isArray(data.connections)) {
+    data.connections = data.connections.filter((edge) =>
+      !sensitivePaths.has(edge?.source || '') && !sensitivePaths.has(edge?.target || '')
+    );
+  }
+  return { ...report, data };
+}
+
 async function analyzeRepository(repositoryPath, options = {}) {
   const root = await resolveRepositoryRoot(repositoryPath);
   const timeout = Math.min(Math.max(Number(options.timeoutMs) || 120000, 1000), 300000);
@@ -56,7 +112,8 @@ async function analyzeRepository(repositoryPath, options = {}) {
     windowsHide: true,
     env: { ...process.env, NO_COLOR: '1' }
   });
-  return { root, report: normalizeAnalysis(JSON.parse(stdout)) };
+  const report = filterSensitiveAnalysis(normalizeAnalysis(JSON.parse(stdout)));
+  return { root, report };
 }
 
 async function readRepositoryFile(repositoryPath, relativePath, options = {}) {
@@ -65,6 +122,9 @@ async function readRepositoryFile(repositoryPath, relativePath, options = {}) {
   const normalized = relativePath.replace(/\\/g, '/');
   if (normalized.startsWith('/') || normalized.split('/').includes('..')) {
     throw new Error('Invalid repository-relative file path');
+  }
+  if (isSensitiveRepositoryPath(normalized)) {
+    throw new Error('Sensitive repository paths are not exposed to AI services');
   }
   const candidate = path.resolve(root, normalized);
   if (!isInside(root, candidate)) throw new Error('File path escapes repository root');
@@ -204,6 +264,7 @@ module.exports = {
   getFileContext,
   getSecurityFindings,
   getSymbolContext,
+  isSensitiveRepositoryPath,
   readRepositoryFile,
   resolveRepositoryRoot,
   searchCode

@@ -52,7 +52,7 @@ function toToolResult(value) {
 }
 
 export function createMcpServer() {
-  const server = new McpServer({ name: 'codeflow', version: '1.0.0' });
+  const server = new McpServer({ name: 'codeflow', version: '1.0.0' }, { maxToolInputElements: 1000 });
   const handlers = buildToolHandlers();
   for (const [name, handler] of Object.entries(handlers)) {
     server.registerTool(
@@ -60,7 +60,13 @@ export function createMcpServer() {
       {
         title: 'CodeFlow ' + name.replaceAll('_', ' '),
         description: toolDescriptions[name],
-        inputSchema: schemas[name]
+        inputSchema: schemas[name],
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false
+        }
       },
       async (args) => {
         try {

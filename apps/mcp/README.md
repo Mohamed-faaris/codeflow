@@ -60,11 +60,15 @@ A tool call can include `repositoryPath` to select a repository within the allow
 
 Analysis reports are cached per repository for 30 seconds by default. Set `CODEFLOW_MCP_CACHE_TTL_MS` to change the cache lifetime. Pass `refresh: true` to analysis-capable tools to force a fresh scan.
 
-## Security boundary
+## Data handling and security boundary
 
 - Paths are canonicalized and constrained to configured allowed roots.
+- Credential-bearing paths are excluded from analysis results and direct file reads, including `.env*`, private-key files, cloud credential directories, and Terraform state/variable files.
 - File reads reject traversal and symlinks that escape the selected repository.
 - File context is bounded to 500 lines and 512 KB.
 - Source search is literal, not an executable regular expression.
-- MCP tools are read-only and do not accept arbitrary commands.
+- MCP tools are annotated read-only and do not accept arbitrary commands.
+- The MCP host receives source snippets returned by tools. Review the host's data-handling policy before connecting a hosted agent.
 - Run the MCP process as an OS user with access only to repositories it should inspect.
+
+The sensitive-path filter reduces accidental credential exposure, but it cannot detect every secret embedded in an ordinary source file.
