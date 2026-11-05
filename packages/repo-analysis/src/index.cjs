@@ -86,7 +86,7 @@ function filterSensitiveAnalysis(report) {
   );
   if (!sensitivePaths.size) return report;
 
-  const visible = (item) => !sensitivePaths.has(item?.path || item?.file || '');
+  const visible = (item) => ![item?.path, item?.file, item?.filePath, item?.file_path, item?.sourcePath].some((candidate) => candidate && sensitivePaths.has(candidate));
   const data = { ...report.data };
   data.files = data.files.filter(visible);
   if (Array.isArray(data.functions)) data.functions = data.functions.filter(visible);
@@ -264,6 +264,7 @@ module.exports = {
   getFileContext,
   getSecurityFindings,
   getSymbolContext,
+  filterSensitiveAnalysis,
   isSensitiveRepositoryPath,
   readRepositoryFile,
   resolveRepositoryRoot,

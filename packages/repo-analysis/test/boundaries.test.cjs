@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { isSensitiveRepositoryPath, resolveRepositoryRoot, readRepositoryFile } = require('../src/index.cjs');
+const { filterSensitiveAnalysis, isSensitiveRepositoryPath, resolveRepositoryRoot, readRepositoryFile } = require('../src/index.cjs');
 
 test('sensitive credential paths are recognized before AI indexing or context reads', () => {
   for (const filePath of [
@@ -22,6 +22,30 @@ test('sensitive credential paths are recognized before AI indexing or context re
   }
   assert.equal(isSensitiveRepositoryPath('src/tokenizer.js'), false);
   assert.equal(isSensitiveRepositoryPath('src/config.example.json'), false);
+});
+
+
+test('analysis reports hide sensitive files and every path-based reference to them', () => {
+  const report = {
+    schemaVersion: 1,
+    data: {
+      files: [{ path: 'src/app.js' }, { path: '.env' }],
+      functions: [{ file: 'src/app.js' }, { file: '.env' }],
+      issues: [{ path: '.env' }, { path: 'src/app.js' }],
+      securityIssues: [{ filePath: '.env' }, { file: 'src/app.js' }],
+      connections: [
+        { source: 'src/app.js', target: '.env' },
+        { source: 'src/app.js', target: 'src/util.js' }
+      ]
+    }
+  };
+  const filtered = filterSensitiveAnalysis(report);
+  assert.deepEqual(filtered.data.files.map((file) => file.path), ['src/app.js']);
+  assert.deepEqual(filtered.data.functions.map((item) => item.file), ['src/app.js']);
+  assert.deepEqual(filtered.data.issues.map((item) => item.path), ['src/app.js']);
+  assert.deepEqual(filtered.data.securityIssues.map((item) => item.file), ['src/app.js']);
+  assert.equal(filtered.data.connections.length, 1);
+  assert.equal(filtered.data.connections[0].target, 'src/util.js');
 });
 
 test('repository roots are constrained by CODEFLOW_ALLOWED_ROOTS', async (t) => {
