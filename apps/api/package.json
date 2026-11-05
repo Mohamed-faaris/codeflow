@@ -1,0 +1,22 @@
+{
+  "name": "@codeflow/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "build": "node --check src/index.js && node --check src/app.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@codeflow/ai-core": "workspace:*",
+    "@codeflow/database": "workspace:*",
+    "@codeflow/repo-analysis": "workspace:*",
+    "@hono/node-server": "^1.19.3",
+    "dotenv": "^17.2.3",
+    "hono": "^4.10.3",
+    "zod": "^4.1.12"
+  },
+  "engines": { "node": ">=20" }
+}

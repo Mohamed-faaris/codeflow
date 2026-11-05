@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "codeflow": {
+      "command": "node",
+      "args": ["/absolute/path/to/codeflow/apps/mcp/src/index.js"],
+      "env": {
+        "CODEFLOW_ALLOWED_ROOTS": "/absolute/path/to/projects",
+        "CODEFLOW_MCP_CACHE_TTL_MS": "30000"
+      }
+    }
+  }
+}
