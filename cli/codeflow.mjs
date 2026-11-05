@@ -525,15 +525,19 @@ export function createCodeflowServer(options) {
 }
 
 async function main() {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const uiRoot = path.resolve(here, '..');
+  dotenv.config({ path: path.join(uiRoot, '.env') });
   const parsed = parseCliArgs(process.argv);
   if (parsed.help) {
     console.log('Usage: npx codeflow [folder] [--port 4173]\nOpens the same Codeflow UI and watches that folder.');
     process.exit(0);
   }
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const uiRoot = path.resolve(here, '..');
-  dotenv.config({ path: path.join(uiRoot, '.env') });
-  const watchRoot = path.resolve(process.cwd(), parsed.target || '.');
+  const defaultTarget = path.resolve(process.cwd()) === path.resolve(uiRoot, 'apps/classic-ui')
+    ? path.relative(process.cwd(), uiRoot)
+    : '.';
+  const target = parsed.target === '.' ? (process.env.CODEFLOW_WATCH_ROOT || defaultTarget) : parsed.target;
+  const watchRoot = path.resolve(process.cwd(), target);
   const stat = await fs.stat(watchRoot).catch(() => null);
   if (!stat || !stat.isDirectory()) {
     console.error('Watch path is not a directory: ' + watchRoot);
