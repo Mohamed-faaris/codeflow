@@ -12676,8 +12676,7 @@ function App(){
     var _cliDirty=useState([]),cliDirty=_cliDirty[0],setCliDirty=_cliDirty[1];
     var _cliLive=useState(Object.create(null)),cliLiveByPath=_cliLive[0],setCliLiveByPath=_cliLive[1];
     var _aiTab=useState('chat'),aiTab=_aiTab[0],setAiTab=_aiTab[1];
-    var _aiApiBase=useState('http://127.0.0.1:4317'),aiApiBase=_aiApiBase[0],setAiApiBase=_aiApiBase[1];
-    var _aiApiToken=useState(''),aiApiToken=_aiApiToken[0],setAiApiToken=_aiApiToken[1];
+    var aiAutoIndexedRootRef=useRef('');
     var _aiProject=useState(null),aiProject=_aiProject[0],setAiProject=_aiProject[1];
     var _aiIndexResult=useState(null),aiIndexResult=_aiIndexResult[0],setAiIndexResult=_aiIndexResult[1];
     var _aiBusy=useState(false),aiBusy=_aiBusy[0],setAiBusy=_aiBusy[1];
@@ -17396,9 +17395,7 @@ function App(){
         options=options||{};
         var headers=Object.assign({},options.headers||{});
         if(options.body!=null)headers['Content-Type']='application/json';
-        if(aiApiToken.trim())headers.Authorization='Bearer '+aiApiToken.trim();
-        var base=String(aiApiBase||'http://127.0.0.1:4317').trim().replace(/\/+$/,'');
-        var response=await fetch(base+path,Object.assign({},options,{headers:headers}));
+        var response=await fetch(path,Object.assign({},options,{headers:headers}));
         var payload=await response.json().catch(function(){return {};});
         if(!response.ok)throw new Error(payload.error||('AI API request failed ('+response.status+')'));
         return payload;
@@ -17416,6 +17413,18 @@ function App(){
         }
         setAiBusy(true);setAiError('');setAiNotice('Checking AI API and registering repository...');
         try{
+            var apiReady=false,lastApiError=null;
+            for(var attempt=0;attempt<30;attempt++){
+                try{
+                    await aiApiRequest('/api/health');
+                    apiReady=true;
+                    break;
+                }catch(error){
+                    lastApiError=error;
+                    if(attempt<29)await new Promise(function(resolve){setTimeout(resolve,500);});
+                }
+            }
+            if(!apiReady)throw lastApiError||new Error('Local CodeFlow AI API did not become ready');
             await aiApiRequest('/api/providers');
             var registered=await aiApiRequest('/api/projects',{
                 method:'POST',
@@ -17434,6 +17443,13 @@ function App(){
             setAiNotice('');
         }finally{setAiBusy(false);}
     }
+
+    useEffect(function(){
+        if(!data||!aiCanUseCurrentCli()||!cliStatus.root||aiBusy)return;
+        if(aiAutoIndexedRootRef.current===cliStatus.root)return;
+        aiAutoIndexedRootRef.current=cliStatus.root;
+        aiConnectAndIndex();
+    },[cliStatus&&cliStatus.root,localSourceKind,currentHydrationId,!!data,aiBusy]);
 
     async function aiSendChat(){
         var question=String(aiQuestion||'').trim();
@@ -17517,13 +17533,7 @@ function App(){
         return React.createElement('div',{className:'ai-workspace'},
             React.createElement('div',{className:'ai-config'},
                 React.createElement('div',{style:{fontSize:10,fontWeight:700,color:'var(--t1)'}},'CODEFLOW AI'),
-                React.createElement('input',{type:'text','aria-label':'AI API URL',value:aiApiBase,onChange:function(e){setAiApiBase(e.target.value);},placeholder:'http://127.0.0.1:4317'}),
-                React.createElement('input',{type:'password','aria-label':'AI API token',value:aiApiToken,onChange:function(e){setAiApiToken(e.target.value);},placeholder:'API token (only when CODEFLOW_API_TOKEN is set)'}),
-                React.createElement('div',{className:'ai-actions'},
-                    React.createElement('button',{className:'top-btn primary',onClick:aiConnectAndIndex,disabled:aiBusy||!connected},aiBusy?'Indexing...':'Connect & Index Local Repo'),
-                    React.createElement('span',{className:'ai-muted'},aiProject?'Project connected':'Not connected')
-                ),
-                !connected&&React.createElement('div',{className:'ai-muted'},'AI indexing requires a local checkout exposed by CodeFlow CLI. GitHub-only, browser-folder and ZIP analyses remain browser-local and are not uploaded automatically.'),
+                aiBusy&&React.createElement('div',{className:'ai-muted'},'Connecting to local AI services and indexing repository...'),
                 aiProject&&React.createElement('div',{className:'ai-status'},'Project: ',aiProject.name||aiProject.root_path||aiProject.id,aiIndexResult?' · Indexed '+(aiIndexResult.indexedFiles||0)+' files':''),
                 aiNotice&&React.createElement('div',{className:'ai-status'},aiNotice),
                 aiError&&React.createElement('div',{className:'ai-error'},aiError)

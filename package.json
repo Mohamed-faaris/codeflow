@@ -29,5 +29,8 @@
     "overrides": {
       "zod": "^4.2.0"
     }
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
   }
 }

@@ -479,7 +479,7 @@ pnpm db:migrate
 pnpm dev
 ```
 
-`pnpm dev` explicitly starts Turborepo's interactive terminal UI (`--ui=tui`) with two tasks: the original CodeFlow interface at `http://127.0.0.1:4173` and the AI API at `http://127.0.0.1:4317`. All AI and MCP controls are integrated into the original interface; there is no separate dashboard application or dashboard workspace dependency. Set `CODEFLOW_WATCH_ROOT` to the local checkout you want the original UI to watch, and include that checkout in `CODEFLOW_ALLOWED_ROOTS`. The AI panel registers and indexes the CLI-watched checkout before enabling chat, audit and refactoring.
+`pnpm dev` explicitly starts Turborepo's interactive terminal UI (`--ui=tui`) with two tasks: the original CodeFlow interface at `http://localhost:4173` and the AI API at `http://localhost:4317`. All AI and MCP controls are integrated into the original interface; there is no separate dashboard application or dashboard workspace dependency. Set `CODEFLOW_WATCH_ROOT` to the local checkout you want the original UI to watch, and include that checkout in `CODEFLOW_ALLOWED_ROOTS`. The AI panel registers and indexes the CLI-watched checkout before enabling chat, audit and refactoring.
 
 Use `pnpm dev:stream` only in CI, redirected output, or terminals without TTY support; it runs the same two tasks with streaming logs instead of the interactive TUI.
 
@@ -493,12 +493,12 @@ CODEFLOW_ALLOWED_ROOTS=/absolute/path/to/checkout \
 pnpm dev
 ```
 
-Run `docker compose up -d postgres` and `pnpm db:migrate` before starting the API. Configure at least one chat provider in `.env` (for example `OPENAI_API_KEY`, or Ollama for local inference). When the UI opens, select **AI → Connect & Index Local Repo**. The panel then exposes:
+Run `docker compose up -d postgres` and `pnpm db:migrate` before starting the API. Configure `CODEFLOW_AI_API_URL=http://localhost:4317`, `CODEFLOW_WATCH_ROOT`, and `CODEFLOW_ALLOWED_ROOTS` in `.env`, plus at least one chat provider (for example `OPENAI_API_KEY`, or Ollama for local inference). When the original UI detects the CLI-watched checkout, it automatically registers and indexes it through the local same-origin API proxy. No API URL, token, or manual connect button is required in the browser. The panel then exposes:
 - Repository chat with file/line citations.
 - AI review of the existing static security findings.
 - Single-file refactoring proposals with a diff, a separate approval step, and a separate apply step.
 
-For a protected local API, enter `CODEFLOW_API_TOKEN` in the AI panel. The token stays in the page's memory and is not written to browser storage. Browser-only GitHub, folder-picker and ZIP analyses are not silently uploaded to the AI backend; use the CLI so the backend can read the same local checkout.
+If `CODEFLOW_API_TOKEN` is configured, the local CLI proxy attaches it server-side; the token is never exposed to browser JavaScript. Browser-only GitHub, folder-picker and ZIP analyses are not silently uploaded to the AI backend; use the CLI so the backend can read the same local checkout.
 
 ### MCP server interface
 
