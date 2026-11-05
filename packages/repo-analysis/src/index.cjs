@@ -41,7 +41,7 @@ function isSensitiveRepositoryPath(relativePath) {
   if (/(^|[-_.])(secret|secrets|credential|credentials|token|tokens|private[_-]?key)([-_.]|$)/i.test(filename)) {
     return true;
   }
-  if (/^(?:service-account|firebase-adminsdk)[-_.].*\.json$/i.test(filename)) return true;
+  if (/(?:service[-_]?account|firebase-adminsdk).*\\.json$/i.test(filename)) return true;
   return false;
 }
 

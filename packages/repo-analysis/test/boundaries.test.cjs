@@ -34,6 +34,9 @@ test('sensitive credential paths are recognized before AI indexing or context re
     '.aws/credentials',
     '.ssh/id_ed25519',
     'config/service-account-prod.json',
+    'config/service-account.json',
+    'config/gcp-service-account.json',
+    'config/serviceAccount.json',
     'certs/server.pem',
     'infra/terraform.tfstate',
     'private/api-token.txt'
