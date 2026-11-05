@@ -17379,9 +17379,14 @@ function App(){
         return payload;
     }
 
+    function aiCanUseCurrentCli(){
+        var activeSource=currentAnalysisSource();
+        return !!(cliStatus&&cliStatus.ok&&cliStatus.root&&activeSource&&activeSource.sourceType==='cli'&&cliRecordMatchesStatus(activeSource,cliStatus));
+    }
+
     async function aiConnectAndIndex(){
-        if(!cliStatus||!cliStatus.ok||!cliStatus.root){
-            setAiError('The AI backend needs a local repository path. Start the original UI through CodeFlow CLI or set CODEFLOW_WATCH_ROOT before pnpm dev.');
+        if(!aiCanUseCurrentCli()){
+            setAiError('Load the local repository through CodeFlow CLI first. AI indexing will not use a different GitHub, folder-picker or ZIP analysis.');
             return;
         }
         setAiBusy(true);setAiError('');setAiNotice('Checking AI API and registering repository...');
@@ -17481,7 +17486,7 @@ function App(){
     }
 
     function renderAIWorkspace(){
-        var connected=!!(cliStatus&&cliStatus.ok&&cliStatus.root);
+        var connected=aiCanUseCurrentCli();
         var fileChoices=data&&Array.isArray(data.files)?data.files:[];
         var activeFile=aiRefactorPath||(selected&&selected.path)||'';
         return React.createElement('div',{className:'ai-workspace'},
