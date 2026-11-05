@@ -68,9 +68,11 @@ export async function indexRepository(options) {
       if (!absolute.startsWith(root + path.sep) && absolute !== root) continue;
       let content;
       try {
-        const stat = await fs.stat(absolute);
+        const realFile = await fs.realpath(absolute);
+        if (!realFile.startsWith(root + path.sep)) continue;
+        const stat = await fs.stat(realFile);
         if (!stat.isFile() || stat.size > 2 * 1024 * 1024) continue;
-        content = await fs.readFile(absolute, 'utf8');
+        content = await fs.readFile(realFile, 'utf8');
       } catch { continue; }
       if (content.includes('\u0000')) continue;
       const digest = hashContent(content);

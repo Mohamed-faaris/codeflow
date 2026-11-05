@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createTwoFilesPatch } from 'diff';
 import { getPool } from '@codeflow/database';
 import { readRepositoryFile, resolveRepositoryRoot } from '@codeflow/repo-analysis';
@@ -85,7 +85,16 @@ export async function applyRefactoring(options) {
   const path = await import('node:path');
   const target = path.resolve(root, proposal.file_path);
   if (!target.startsWith(root + path.sep)) throw new Error('Unsafe refactor target path');
-  await fs.writeFile(target, proposal.replacement, { encoding: 'utf8', flag: 'r+' });
+  const temporary = target + '.codeflow-' + randomUUID() + '.tmp';
+  await fs.writeFile(temporary, proposal.replacement, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+  const latestContent = await fs.readFile(target, 'utf8');
+  const latestHash = createHash('sha256').update(latestContent).digest('hex');
+  if (latestHash !== proposal.original_hash) {
+    await fs.unlink(temporary).catch(() => {});
+    await pool.query("UPDATE refactor_proposals SET status='stale' WHERE id=$1", [proposal.id]);
+    throw new Error('Source file changed immediately before apply; generate a new proposal');
+  }
+  await fs.rename(temporary, target);
   await pool.query("UPDATE refactor_proposals SET status='applied', applied_at=now() WHERE id=$1", [proposal.id]);
   return { id: proposal.id, filePath: proposal.file_path, status: 'applied' };
 }

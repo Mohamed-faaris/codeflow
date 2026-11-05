@@ -48,7 +48,7 @@ async function projectById(projectId) {
 
 export function createApp() {
   const app = new Hono();
-  const allowedOrigins = (process.env.CODEFLOW_ALLOWED_ORIGINS || 'http://localhost:4173,http://127.0.0.1:4173')
+  const allowedOrigins = (process.env.CODEFLOW_ALLOWED_ORIGINS || 'http://localhost:4173,http://127.0.0.1:4173,http://localhost:4174,http://127.0.0.1:4174')
     .split(',').map((origin) => origin.trim()).filter(Boolean);
 
   app.use('/api/*', cors({
@@ -146,14 +146,14 @@ export function createApp() {
       [sessionId]
     );
     const historyMessages = history.rows.reverse().filter((row) => row.role === 'user' || row.role === 'assistant');
-    const contextText = retrieved.results.map((item, index) =>
-      '[Source ' + (index + 1) + ': ' + item.path + ':' + item.startLine + '-' + item.endLine + ']\n' + item.content
-    ).join('\n\n');
-
     await getPool().query(
       'INSERT INTO chat_messages(session_id,role,content) VALUES ($1,$2,$3)',
       [sessionId, 'user', body.question]
     );
+    const contextText = retrieved.results.map((item, index) =>
+      '[Source ' + (index + 1) + ': ' + item.path + ':' + item.startLine + '-' + item.endLine + ']\n' + item.content
+    ).join('\n\n');
+
     const response = await manager.generate({
       provider: body.provider,
       model: body.model,

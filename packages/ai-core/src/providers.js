@@ -83,7 +83,7 @@ export function providerConfig(name, overrides = {}) {
 export function listProviderStatus() {
   return Object.keys(PROVIDER_ENV).map((name) => {
     const config = providerConfig(name);
-    const hasKey = name === 'ollama' ? Boolean(config.baseUrl) : Boolean(config.apiKey);
+    const hasKey = ['ollama', 'openai-compatible'].includes(name) ? Boolean(config.baseUrl) : Boolean(config.apiKey);
     const supportsEmbeddings = name !== 'anthropic' && Boolean(config.embeddingModel);
     return {
       id: name,
@@ -98,7 +98,7 @@ export function listProviderStatus() {
 function requireProviderConfig(name, overrides) {
   const config = providerConfig(name, overrides);
   if (!config.model) throw new Error('No model configured for provider ' + name);
-  if (name !== 'ollama' && !config.apiKey) throw new Error('Missing API key for provider ' + name);
+  if (!['ollama', 'openai-compatible'].includes(name) && !config.apiKey) throw new Error('Missing API key for provider ' + name);
   if (name === 'openai-compatible' && !config.baseUrl) throw new Error('OPENAI_COMPATIBLE_BASE_URL is required');
   return config;
 }
@@ -106,7 +106,7 @@ function requireProviderConfig(name, overrides) {
 async function openAiGenerate(config, messages, options) {
   const payload = await requestJson(joinUrl(config.baseUrl, 'chat/completions'), {
     method: 'POST',
-    headers: { authorization: 'Bearer ' + config.apiKey, 'content-type': 'application/json' },
+    headers: { ...(config.apiKey ? { authorization: 'Bearer ' + config.apiKey } : {}), 'content-type': 'application/json' },
     body: JSON.stringify({
       model: config.model,
       messages,
@@ -203,7 +203,7 @@ async function ollamaGenerate(config, messages, options) {
 async function openAiEmbeddings(config, texts) {
   const payload = await requestJson(joinUrl(config.baseUrl, 'embeddings'), {
     method: 'POST',
-    headers: { authorization: 'Bearer ' + config.apiKey, 'content-type': 'application/json' },
+    headers: { ...(config.apiKey ? { authorization: 'Bearer ' + config.apiKey } : {}), 'content-type': 'application/json' },
     body: JSON.stringify({ model: config.embeddingModel, input: texts })
   }, config.name);
   return (payload.data || []).sort((a, b) => a.index - b.index).map((item) => item.embedding);
