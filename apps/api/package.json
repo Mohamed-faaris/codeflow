@@ -16,7 +16,9 @@
     "@hono/node-server": "^1.19.3",
     "dotenv": "^17.2.3",
     "hono": "^4.10.3",
-    "zod": "^4.1.12"
+    "zod": "^4.2.0"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }
