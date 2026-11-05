@@ -1,3 +1,5 @@
 packages:
-  - "apps/*"
+  - "apps/api"
+  - "apps/classic-ui"
+  - "apps/mcp"
   - "packages/*"

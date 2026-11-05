@@ -11,7 +11,7 @@
     "codeflow": "./cli/codeflow.mjs"
   },
   "scripts": {
-    "dev": "turbo run dev --filter=@codeflow/api --filter=@codeflow/classic-ui",
+    "dev": "turbo run dev --ui=tui --filter=@codeflow/api --filter=@codeflow/classic-ui",
     "build": "turbo run build",
     "test": "turbo run test && node --test tests/*.test.mjs tests/*.smoke.js",
     "test:legacy": "node --test tests/*.test.mjs tests/*.smoke.js",
@@ -20,8 +20,7 @@
     "db:migrate": "pnpm --filter @codeflow/database migrate",
     "analyze": "node card/analyze.js --path .",
     "codeflow:local": "node cli/codeflow.mjs .",
-    "start:dashboard": "pnpm --filter @codeflow/dashboard dev",
-    "dev:workspace": "turbo run dev"
+    "dev:stream": "turbo run dev --ui=stream --filter=@codeflow/api --filter=@codeflow/classic-ui"
   },
   "devDependencies": {
     "turbo": "^2.6.0"

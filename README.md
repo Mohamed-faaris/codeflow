@@ -479,7 +479,9 @@ pnpm db:migrate
 pnpm dev
 ```
 
-`pnpm dev` opens Turborepo's interactive TUI and starts the original CodeFlow interface at `http://127.0.0.1:4173` plus the AI API at `http://127.0.0.1:4317`. The AI features are integrated into the original interface's right panel under **AI**; the separate dashboard is optional and can still be started with `pnpm start:dashboard`. Set `CODEFLOW_WATCH_ROOT` to the local checkout you want the original UI to watch, and include that checkout in `CODEFLOW_ALLOWED_ROOTS`. The AI panel registers and indexes the CLI-watched checkout before enabling chat, audit and refactoring.
+`pnpm dev` explicitly starts Turborepo's interactive terminal UI (`--ui=tui`) with two tasks: the original CodeFlow interface at `http://127.0.0.1:4173` and the AI API at `http://127.0.0.1:4317`. All AI and MCP controls are integrated into the original interface; there is no separate dashboard application or dashboard workspace dependency. Set `CODEFLOW_WATCH_ROOT` to the local checkout you want the original UI to watch, and include that checkout in `CODEFLOW_ALLOWED_ROOTS`. The AI panel registers and indexes the CLI-watched checkout before enabling chat, audit and refactoring.
+
+Use `pnpm dev:stream` only in CI, redirected output, or terminals without TTY support; it runs the same two tasks with streaming logs instead of the interactive TUI.
 
 ### Using the integrated AI panel
 
