@@ -485,6 +485,8 @@ The AI API listens on `http://127.0.0.1:4317`; the AI dashboard listens on `http
 
 Supported adapters: OpenAI, Anthropic, Gemini, Ollama and OpenAI-compatible endpoints. Configure chat and embedding providers independently in `.env`. Anthropic currently provides chat only; configure another provider for embeddings. If embedding credentials are unavailable, retrieval falls back to keyword search.
 
+**Code privacy:** The browser-only analyzer remains local. The optional AI workspace is different: repository chunks and relevant source context are sent to the LLM or embedding provider you configure when you index, chat, audit or generate a refactor. CodeFlow excludes common credential paths (such as `.env*`, cloud credential directories, private keys and Terraform state) from AI/MCP access, but cannot detect every secret embedded in ordinary source files. Do not use a hosted provider for repositories whose policy forbids external code processing; use Ollama or a private endpoint when appropriate.
+
 ### MCP for external agents
 
 CodeFlow includes a read-only MCP server for custom MCP integrations. It exposes repository analysis, literal code search, line-bounded file context, dependency graphs, blast-radius estimates, security findings and symbol lookup.
